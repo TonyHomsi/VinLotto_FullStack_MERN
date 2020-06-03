@@ -1,0 +1,19 @@
+.title {
+  padding: 100px;
+  text-align: center;
+  color: white;
+  font-size: 80px;
+}
+
+.video {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  width: 100%;
+  max-width: 50rem;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 4rem auto;
+  text-align: center;
+}
