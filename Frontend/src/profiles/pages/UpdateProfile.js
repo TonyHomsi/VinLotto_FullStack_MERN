@@ -1,46 +1,26 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useState, useContext } from "react";
+import { useParams, useHistory } from "react-router-dom";
 
 import Input from "../../shared/components/FormElements/Input";
 import Button from "../../shared/components/FormElements/Button";
 import Card from "../../shared/components/UIElements/Card";
+import ErrorModal from "../../shared/components/UIElements/ErrorModal";
+import LoadingSpinner from "../../shared/components/UIElements/LoadingSpinner";
 import {
   VALIDATOR_REQUIRE,
   VALIDATOR_MINLENGTH,
 } from "../../shared/util/validators";
 import "./ProfileForm.css";
 import { useForm } from "../../shared/hooks/form-hook";
-
-const DUMMY_PROFILES = [
-  {
-    id: "p1",
-    title: "HiQ Innovation Lab in Norrköping",
-    description: "One of the most famous place in the world!",
-    imageUrl: "/Images/hiq-location_norrkoping.jpg",
-    address: "Laxholmstorget 3",
-    location: {
-      lat: 58.5888736,
-      lng: 16.1807967,
-    },
-    creator: "u1",
-  },
-  {
-    id: "p2",
-    title: "HiQ Innovation Lab in Linköping",
-    description: "One of the most famous place in the world!",
-    imageUrl: "/Images/hiq-location_norrkoping.jpg",
-    address: "Laxholmstorget 3",
-    location: {
-      lat: 58.5888736,
-      lng: 16.1807967,
-    },
-    creator: "u2",
-  },
-];
+import { useHttpClient } from "../../shared/hooks/http-hook";
+import { AuthContext } from "../../shared/context/auth-context";
 
 const UpdateProfile = () => {
-  const [isLoading, setIsloading] = useState(true);
+  const auth = useContext(AuthContext);
+  const { isLoading, error, sendRequest, clearError } = useHttpClient();
+  const [loadedProfile, setloadedProfile] = useState();
   const profileId = useParams().profileId;
+  const history = useHistory();
 
   const [formState, inputHandler, setFormData] = useForm(
     {
@@ -56,34 +36,57 @@ const UpdateProfile = () => {
     false
   );
 
-  const identifiedProfile = DUMMY_PROFILES.find((p) => p.id === profileId);
-
   useEffect(() => {
-    if (identifiedProfile) {
-      setFormData(
-        {
-          title: {
-            value: identifiedProfile.title,
-            isValid: true,
+    const fetchProfile = async () => {
+      try {
+        const responseData = await sendRequest(
+          `http://localhost:5000/api/profiles/${profileId}`
+        );
+        setloadedProfile(responseData.profile);
+        setFormData(
+          {
+            title: {
+              value: responseData.profile.title,
+              isValid: true,
+            },
+            description: {
+              value: responseData.profile.description,
+              isValid: true,
+            },
           },
-          description: {
-            value: identifiedProfile.description,
-            isValid: true,
-          },
-        },
-        true
-      );
-    }
+          true
+        );
+      } catch (err) {}
+    };
+    fetchProfile();
+  }, [sendRequest, profileId, setFormData]);
 
-    setIsloading(false);
-  }, [setFormData, identifiedProfile]);
-
-  const profileUpdateSubmitHandler = (event) => {
+  const profileUpdateSubmitHandler = async (event) => {
     event.preventDefault();
-    console.log(formState.inputs);
+    try {
+      await sendRequest(
+        `http://localhost:5000/api/profiles/${profileId}`,
+        "PATCH",
+        JSON.stringify({
+          title: formState.inputs.title.value,
+          description: formState.inputs.description.value,
+        }),
+        {
+          "Content-Type": "application/json",
+        }
+      );
+      history.push("/" + auth.userId + "/profiles");
+    } catch (err) {}
   };
+  if (isLoading) {
+    return (
+      <div className="center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
-  if (!identifiedProfile) {
+  if (!loadedProfile && !error) {
     return (
       <div className="center">
         <Card>
@@ -93,41 +96,38 @@ const UpdateProfile = () => {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="center">
-        <h2>Loading....</h2>
-      </div>
-    );
-  }
-
   return (
-    <form className="profile-form" onSubmit={profileUpdateSubmitHandler}>
-      <Input
-        id="title"
-        element="input"
-        type="text"
-        label="Title"
-        validators={[VALIDATOR_REQUIRE()]}
-        errorText="Please enter a valid title."
-        onInput={inputHandler}
-        initialValue={formState.inputs.title.value}
-        initialValid={formState.inputs.title.isValid}
-      />
-      <Input
-        id="description"
-        element="textarea"
-        label="Description"
-        validators={[VALIDATOR_MINLENGTH(5)]}
-        errorText="Please enter a valid description (min. 5 characters)."
-        onInput={inputHandler}
-        initialValue={formState.inputs.description.value}
-        initialValid={formState.inputs.description.isValid}
-      />
-      <Button type="submit" disabled={!formState.isValid}>
-        UPDATE ME!
-      </Button>
-    </form>
+    <React.Fragment>
+      <ErrorModal error={error} onClear={clearError} />
+      {!isLoading && loadedProfile && (
+        <form className="profile-form" onSubmit={profileUpdateSubmitHandler}>
+          <Input
+            id="title"
+            element="input"
+            type="text"
+            label="Title"
+            validators={[VALIDATOR_REQUIRE()]}
+            errorText="Please enter a valid title."
+            onInput={inputHandler}
+            initialValue={loadedProfile.title}
+            initialValid={true}
+          />
+          <Input
+            id="description"
+            element="textarea"
+            label="Description"
+            validators={[VALIDATOR_MINLENGTH(5)]}
+            errorText="Please enter a valid description (min. 5 characters)."
+            onInput={inputHandler}
+            initialValue={loadedProfile.description}
+            initialValid={true}
+          />
+          <Button type="submit" disabled={!formState.isValid}>
+            UPDATE ME!
+          </Button>
+        </form>
+      )}
+    </React.Fragment>
   );
 };
 

@@ -22,12 +22,12 @@ const ProfileList = (porps) => {
         <ProfileItem
           key={profile.id}
           id={profile.id}
-          image={profile.imageUrl}
+          image={profile.image}
           title={profile.title}
           description={profile.description}
           address={profile.address}
           creatorId={profile.creator}
-          // coordinates={profile.location}
+          onDelete={porps.onDeletePlace}
         />
       ))}
     </ul>

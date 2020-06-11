@@ -3,14 +3,14 @@ const { validationResult } = require("express-validator");
 const HttpError = require("../models/http-error");
 const User = require("../models/user");
 
-const DUMMY_USERS = [
+/* const DUMMY_USERS = [
   {
     id: "u1",
     name: "Tony Homsi",
     email: "tony@hiq.se",
     password: "tester",
   },
-];
+]; */
 
 const getUsers = async (req, res, next) => {
   let users;
@@ -93,7 +93,10 @@ const login = async (req, res, next) => {
     );
     return next(error);
   }
-  res.json({ message: "Logged in!" });
+  res.json({
+    message: "Logged in!",
+    user: existingUser.toObject({ getters: true }),
+  });
 };
 
 exports.getUsers = getUsers;

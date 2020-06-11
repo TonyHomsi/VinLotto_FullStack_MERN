@@ -4,16 +4,6 @@ const HttpError = require("../models/http-error");
 const Profile = require("../models/profile");
 const User = require("../models/user");
 
-let DUMMY_PROFILE = [
-  {
-    id: "p1",
-    title: "Empire State building",
-    description: "One of the famous place",
-    address: "20 W 34th St, New York, NY 10001",
-    creator: "u1",
-  },
-];
-
 const getProfileById = async (req, res, next) => {
   const profileId = req.params.pid; // {pid: ''p1}
 
@@ -51,6 +41,7 @@ const getProfilesByUserId = async (req, res, next) => {
     );
     return next(error);
   }
+  console.log(userWithProfile);
   if (!userWithProfile || userWithProfile._profile.length === 0) {
     return next(new HttpError("Could not find profiles for the user id", 404));
   }
